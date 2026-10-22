@@ -4387,3 +4387,24 @@ There are no new hourly proposals since DEEP-10-10.
 - **Andersson open row `e746d7e1ba99`** is still open past its end date (first logged
   10-03). Its unrealized P&L is +$0.60. The unreachable 48h void branch in resolve.py
   (10-03 note) is still the cause. Unchanged.
+
+## 2026-10-22 06:5xZ - P11 (new, HIGH): CLOB book is geoblocked (HTTP 451) from the operator machine
+
+- **Symptom.** On this FULL tick (runner=operator, paper), every `clob.polymarket.com/book`
+  GET returns `HTTP Error 451: Unavailable For Legal Reasons`. This was retried, and it failed
+  the same way each time. `score.py` open-position MTM failed on all 4 open rows.
+  `core/forecast.py record` crashes in `pmapi.best_prices` (core/pmapi.py:44) before it
+  writes a row. Two forecasts were researched to concrete estimates this tick and could not
+  be recorded: Iowa SI 6030803 Yes 0.66 and Right to Repair 6030807 Yes 0.13 (both
+  market-agrees). `ledger.py place` uses the same book path, so no bet could have been
+  placed either.
+- **Still reachable.** gamma-api (scan, resolve, WebFetch reads) still works. The block is
+  CLOB-only. Earlier operator-machine cycles recorded forecasts normally, so this is a new
+  condition on this machine's network path (IP/VPN/region). It is not a strategy-side bug.
+- **Ask.** (a) Restore a non-geoblocked egress for operator-machine runs. Or (b) let
+  `forecast.py record` fall back to gamma `bestBid`/`bestAsk` with a `book_source: gamma`
+  flag when the CLOB returns 451. The second option needs care: score.py grades against the
+  recorded mid. Until fixed, operator-machine FULL ticks lose every forecast row they
+  research, and the forecast stream is the experiment's main calibration feed.
+  Real-mode twins (core/real.py) would presumably hit the same block.
+- Status: PROPOSED.
